@@ -1,4 +1,5 @@
 // app/auth/sign-in.tsx
+import React from 'react';
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
@@ -8,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { saveToken } from '../lib/auth';
+import { saveToken, setResetRequired } from '../lib/auth';
 import { API } from '../lib/config';
 
 const C = {
@@ -24,14 +25,14 @@ const C = {
 };
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
+  const [usn, setUsn] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState('');
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing Info', 'Please enter both email and password');
+    if (!usn.trim() || !password.trim()) {
+      Alert.alert('Missing Info', 'Please enter both USN and password');
       return;
     }
     setLoading(true);
@@ -39,12 +40,19 @@ export default function SignIn() {
       const res = await fetch(`${API}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ usn: usn.trim().toUpperCase(), password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Sign in failed');
-      await saveToken(data.token, data.student_id);
-      router.replace('/(tabs)');
+      await saveToken(data.token, data.user_id);
+      await saveToken(data.token, data.user_id ?? data.student_id);
+      await setResetRequired(!!data.password_reset_required);
+
+      if (data.password_reset_required) {
+        router.replace('/auth/change-password?forced=1');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (e: any) {
       Alert.alert('Sign In Failed', e.message);
     } finally {
@@ -87,25 +95,26 @@ export default function SignIn() {
           <View style={{ paddingHorizontal: 24, gap: 20 }}>
             <View>
               <Text style={{ fontSize: 12, fontWeight: '700', color: C.textDim, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>
-                Email
+                USN
               </Text>
               <View style={{
                 backgroundColor: C.card, borderRadius: 12,
                 borderWidth: 1,
-                borderColor: focused === 'email' ? C.borderFocus : C.border,
+                borderColor: focused === 'usn' ? C.borderFocus : C.border,
               }}>
                 <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="samarth@example.com"
+                  value={usn}
+                  onChangeText={setUsn}
+                  placeholder="1XX00XX000"
                   placeholderTextColor={C.textFaint}
-                  onFocus={() => setFocused('email')}
+                  onFocus={() => setFocused('usn')}
                   onBlur={() => setFocused('')}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
                   style={{
                     fontSize: 15, color: C.text,
                     paddingHorizontal: 16, paddingVertical: 14,
+                    letterSpacing: 1,
                   }}
                 />
               </View>
@@ -158,15 +167,6 @@ export default function SignIn() {
               ) : (
                 <Text style={{ fontSize: 15, fontWeight: '700', color: C.bg }}>Sign In</Text>
               )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push('/auth/sign-up')}
-              style={{ marginTop: 20, alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 13, color: C.textDim }}>
-                Don't have an account? <Text style={{ color: C.text, fontWeight: '700' }}>Create one</Text>
-              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

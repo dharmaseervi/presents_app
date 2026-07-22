@@ -1,4 +1,5 @@
 import { View, Text, ScrollView } from 'react-native';
+import React from 'react';
 
 type TimeSlot = {
   id: string;
@@ -24,15 +25,15 @@ const C = {
 export function TimetableView({ timetable }: Props) {
   const now = new Date();
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
+
   const sorted = [...timetable].sort((a, b) => a.time_slot.localeCompare(b.time_slot));
-  
+
   const getStatus = (timeSlot: string) => {
     const nextIndex = sorted.findIndex(s => s.time_slot >= currentTime);
     const currentIndex = nextIndex > 0 ? nextIndex - 1 : -1;
-    
+
     const classIndex = sorted.findIndex(s => s.time_slot === timeSlot);
-    
+
     if (classIndex === currentIndex) return 'current';
     if (classIndex === nextIndex) return 'next';
     if (classIndex < currentIndex) return 'done';
@@ -44,11 +45,11 @@ export function TimetableView({ timetable }: Props) {
       {sorted.map((entry, idx) => {
         const status = getStatus(entry.time_slot);
         const isFirst = status === 'current';
-        
+
         const bgColor = status === 'current' ? '#16162A' : status === 'next' ? '#1A1A28' : C.surface;
         const borderColor = status === 'current' ? C.purple : status === 'next' ? C.teal : '#2A2A40';
         const timeColor = status === 'current' ? C.purple : status === 'done' ? C.textMuted : C.text;
-        
+
         const statusLabel = status === 'current' ? '🔴 NOW' : status === 'done' ? '✓ Done' : status === 'next' ? '⏭ Next' : '⏳ Later';
         const statusColor = status === 'current' ? C.red : status === 'done' ? C.teal : C.textMuted;
 
@@ -82,7 +83,7 @@ export function TimetableView({ timetable }: Props) {
                 </Text>
               </View>
             </View>
-            
+
             {status === 'current' && (
               <View style={{ backgroundColor: '#200D0D', borderRadius: 8, padding: 8, marginTop: 8, borderWidth: 1, borderColor: '#4A1A1A' }}>
                 <Text style={{ fontSize: 11, color: C.red, fontWeight: '600' }}>
@@ -90,7 +91,7 @@ export function TimetableView({ timetable }: Props) {
                 </Text>
               </View>
             )}
-            
+
             {status === 'next' && (
               <View style={{ backgroundColor: '#0D1E18', borderRadius: 8, padding: 8, marginTop: 8, borderWidth: 1, borderColor: '#1A4A3A' }}>
                 <Text style={{ fontSize: 11, color: C.teal, fontWeight: '600' }}>

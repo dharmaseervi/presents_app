@@ -2,9 +2,8 @@ import { BleManager } from 'react-native-ble-plx';
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import { getToken } from './auth';
 
-
 const manager = new BleManager();
-const RSSI_THRESHOLD = -120;
+const RSSI_THRESHOLD = -85; // more lenient — phone-to-phone, not a fixed classroom beacon
 const SCAN_DURATION = 30000;
 
 export const checkBLEAvailable = async (): Promise<boolean> => {
@@ -43,7 +42,6 @@ export const startBLEFlow = async (
   onDetected: () => void,
   onError: (err: Error) => void
 ): Promise<() => void> => {
-  // Check if BLE is available
   const bleAvailable = await checkBLEAvailable();
   if (!bleAvailable) {
     const err = new Error('Bluetooth is OFF. Turn on Bluetooth and try again.');
@@ -53,7 +51,6 @@ export const startBLEFlow = async (
   }
 
   const hasPermission = await requestBLEPermission();
-
   if (!hasPermission) {
     const err = new Error('Bluetooth permission denied');
     Alert.alert('BLE Error', err.message);
@@ -73,18 +70,17 @@ export const startBLEFlow = async (
 
     if (!device || marked) return;
 
+    // Match ONLY on service UUID — the professor's phone advertises the
+    // session ID as a service UUID. Device name is not reliable (iOS drops
+    // it when the advertiser's app is backgrounded), so it's not used at all.
     const uuids = device.serviceUUIDs ?? [];
-    const matchedUUID = uuids.some((u) => u.toLowerCase() === sessionId.toLowerCase());
-    const matchedName = device.name?.includes('Presentsz') || device.localName?.includes('Presentsz') || false;
+    const matched = uuids.some((u) => u.toLowerCase() === sessionId.toLowerCase());
 
-    if ((matchedUUID || matchedName) && (device.rssi ?? -999) > RSSI_THRESHOLD) {
+    if (matched && (device.rssi ?? -999) > RSSI_THRESHOLD) {
       marked = true;
       manager.stopDeviceScan();
 
-      Alert.alert('ESP32 Found! 🎉', `Device: ${device.name ?? device.localName}\nRSSI: ${device.rssi}`);
-
       try {
-        // ONLY call API after BLE confirmed
         const res = await fetch(`${apiUrl}/attendance/mark`, {
           method: 'POST',
           headers: {
@@ -106,7 +102,7 @@ export const startBLEFlow = async (
           throw new Error(`API failed: ${res.status}\n${text}`);
         }
 
-        Alert.alert('Success ✓', 'Attendance marked via BLE!');
+        Alert.alert('Success ✓', 'Attendance marked!');
         onDetected();
       } catch (e: any) {
         Alert.alert('Error', e?.message || 'Failed to mark attendance');
@@ -118,8 +114,10 @@ export const startBLEFlow = async (
   const timeout = setTimeout(() => {
     if (!marked) {
       manager.stopDeviceScan();
-      const err = new Error('ESP32 not found. Make sure:\n1. ESP32 is powered ON\n2. Blue LED is ON\n3. Bluetooth is ON');
-      Alert.alert('BLE Timeout', err.message);
+      const err = new Error(
+        "Professor's session not detected. Make sure:\n1. You're in the classroom\n2. Bluetooth is ON\n3. The session is still active"
+      );
+      Alert.alert('Not Found', err.message);
       onError(err);
     }
   }, SCAN_DURATION);

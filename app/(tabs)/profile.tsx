@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { getToken, getUserId, clearToken } from '../lib/auth';
 import { API } from '../lib/config';
+import React from 'react';
 
 const C = {
   bg: '#000000',
@@ -51,6 +52,8 @@ export default function ProfileScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log(data);
+      
       if (res.ok) {
         setStudent(data);
         if (token && userId) await fetchStats(userId, token);
@@ -311,6 +314,14 @@ export default function ProfileScreen() {
               subtitle="Version 1.0.0"
               onPress={() => Alert.alert('Presentsz', 'Version 1.0.0\n\nBLE-based attendance system\nBuilt with Expo & Go')}
               isLast={true}
+            />
+
+            <SettingRow
+              icon="🔑"
+              label="Change Password"
+              subtitle="Update your account password"
+              onPress={() => router.push('/auth/change-password')}
+              isLast={false}
             />
           </View>
         </View>

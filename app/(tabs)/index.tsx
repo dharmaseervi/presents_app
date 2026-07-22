@@ -11,6 +11,7 @@ import { getToken, getUserId, clearToken } from '../lib/auth';
 import { checkBLEAvailable, startBLEFlow } from '../lib/ble';
 import { API } from '../lib/config';
 import { useAttendanceState } from '../lib/useAttendanceState';
+import React from 'react';
 
 const POLL_INTERVAL = 5000;
 
@@ -49,6 +50,7 @@ type Session = {
 type Student = {
     id: string; name: string; roll_number: string;
     year: string; semester: string; department: string; email: string;
+    section?: string; // ← add this
 };
 
 type TimetableEntry = {
@@ -146,16 +148,17 @@ export default function HomeScreen() {
         try {
             const token = await getToken();
             const res = await fetch(
-                `${API}/sessions/active?year=${encodeURIComponent(student?.year ?? '')}`,
+                `${API}/sessions/active?section=${encodeURIComponent(student?.section ?? '')}&semester=${encodeURIComponent(student?.semester ?? '')}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             const data = await res.json();
+            console.log('SESSION POLL RESULT:', JSON.stringify(data)); // ← temp
             setSession(data);
             if (data.already_marked) attendance.markAlreadyMarked();
             else if (!data.active) attendance.reset();
 
             if (data.active && data.session_id) {
-                const r = await fetch(`${API}/sessions/${data.session_id}/attendance`, {
+                const r = await fetch(`${API}/sessions/${data.session_id}/attendance-count`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const d = await r.json();
@@ -169,7 +172,7 @@ export default function HomeScreen() {
                 if (r.ok && d.count) setTotalCount(d.count);
             }
         } catch (e) { console.error(e); }
-    };
+    }
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -197,7 +200,7 @@ export default function HomeScreen() {
                     if (pollRef.current) clearInterval(pollRef.current);
                     attendance.markSuccess();
                 },
-                (err) => {
+                (err: any) => {
                     if (err.message.includes('already marked')) attendance.markAlreadyMarked();
                     else { attendance.markError(); Alert.alert('Error', err.message); }
                 }
@@ -207,13 +210,6 @@ export default function HomeScreen() {
             attendance.markError();
             Alert.alert('Error', e?.message || 'Failed');
         }
-    };
-
-    const handleLogout = async () => {
-        if (pollRef.current) clearInterval(pollRef.current);
-        if (bleCleanupRef.current) bleCleanupRef.current();
-        await clearToken();
-        router.replace('/auth/sign-in');
     };
 
     if (loading) {
@@ -258,7 +254,7 @@ export default function HomeScreen() {
                             {firstName}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={handleLogout} style={{
+                    <TouchableOpacity onPress={() => router.push('/profile')} style={{
                         width: 44, height: 44, borderRadius: 22,
                         backgroundColor: C.cardElevated,
                         alignItems: 'center', justifyContent: 'center',

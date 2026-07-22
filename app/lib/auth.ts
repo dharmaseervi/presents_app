@@ -6,6 +6,15 @@ import { v4 as uuidv4 } from 'uuid';
 const TOKEN_KEY = 'presentsz_token';
 const USER_ID_KEY = 'presentsz_user_id';
 const BLE_UUID_KEY = 'presentsz_ble_uuid';
+const RESET_REQUIRED_KEY = 'presentsz_reset_required';
+
+export const setResetRequired = async (val: boolean) => {
+  await SecureStore.setItemAsync(RESET_REQUIRED_KEY, val ? '1' : '0');
+};
+
+export const getResetRequired = async (): Promise<boolean> => {
+  return (await SecureStore.getItemAsync(RESET_REQUIRED_KEY)) === '1';
+};
 
 export const saveToken = async (token: string, userId: string) => {
   if (!token || typeof token !== 'string') {
@@ -29,6 +38,7 @@ export const getUserId = async (): Promise<string | null> => {
 export const clearToken = async () => {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
   await SecureStore.deleteItemAsync(USER_ID_KEY);
+  await SecureStore.deleteItemAsync(RESET_REQUIRED_KEY); 
 };
 
 export const isLoggedIn = async (): Promise<boolean> => {

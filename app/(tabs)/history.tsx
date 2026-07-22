@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { getToken, getUserId } from '../lib/auth';
 import { API } from '../lib/config';
+import React from 'react';
 
 const C = {
   bg: '#000000',
