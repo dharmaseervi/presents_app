@@ -7,6 +7,10 @@ export const useAttendanceState = () => {
   const [status, setStatus] = useState<AttendanceStatus>('idle');
   const [markedAt, setMarkedAt] = useState('');
 
+  const markLoading = useCallback(() => {
+    setStatus('marking');
+  }, []);
+
   const markSuccess = useCallback((time?: string) => {
     setStatus('success');
     setMarkedAt(time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
@@ -28,6 +32,7 @@ export const useAttendanceState = () => {
   return {
     status,
     markedAt,
+    markLoading,
     markSuccess,
     markError,
     markAlreadyMarked,

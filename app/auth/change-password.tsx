@@ -21,6 +21,36 @@ const C = {
   textFaint: '#27272A',
 };
 
+function Field({
+  label, value, onChangeText, keyName, focused, onFocus, onBlur,
+}: {
+  label: string; value: string; onChangeText: (v: string) => void;
+  keyName: string; focused: string; onFocus: () => void; onBlur: () => void;
+}) {
+  return (
+    <View>
+      <Text style={{ fontSize: 11, fontWeight: '700', color: C.textDim, marginBottom: 8 }}>
+        {label}
+      </Text>
+      <View style={{
+        backgroundColor: C.card, borderRadius: 12, borderWidth: 1,
+        borderColor: focused === keyName ? C.borderBright : C.border,
+      }}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry
+          placeholder="••••••••"
+          placeholderTextColor={C.textDim}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          style={{ fontSize: 15, color: C.text, paddingHorizontal: 16, paddingVertical: 14 }}
+        />
+      </View>
+    </View>
+  );
+}
+
 export default function ChangePassword() {
   const { forced } = useLocalSearchParams<{ forced?: string }>();
   const isForced = forced === '1';
@@ -78,28 +108,6 @@ export default function ChangePassword() {
     }
   };
 
-  const Field = ({
-    label, value, onChangeText, keyName,
-  }: { label: string; value: string; onChangeText: (v: string) => void; keyName: string }) => (
-    <View>
-      <Text style={{ fontSize: 11, fontWeight: '700', color: C.textDim, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>
-        {label}
-      </Text>
-      <View style={{ backgroundColor: C.card, borderRadius: 12, borderWidth: 1, borderColor: focused === keyName ? C.borderBright : C.border }}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor={C.textFaint}
-          onFocus={() => setFocused(keyName)}
-          onBlur={() => setFocused('')}
-          style={{ fontSize: 15, color: C.text, paddingHorizontal: 16, paddingVertical: 14 }}
-        />
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <StatusBar style="light" />
@@ -122,9 +130,21 @@ export default function ChangePassword() {
           </View>
 
           <View style={{ paddingHorizontal: 24, gap: 18 }}>
-            <Field label="Current Password" value={current} onChangeText={setCurrent} keyName="current" />
-            <Field label="New Password" value={next} onChangeText={setNext} keyName="next" />
-            <Field label="Confirm New Password" value={confirm} onChangeText={setConfirm} keyName="confirm" />
+            <Field
+              label="Current Password"
+              value={current}
+              onChangeText={setCurrent}
+              keyName="current"
+              focused={focused}
+              onFocus={() => setFocused('current')}
+              onBlur={() => setFocused('')}
+            />
+            <Field label="New Password" value={next} onChangeText={setNext} keyName="next" focused={focused}
+              onFocus={() => setFocused('current')}
+              onBlur={() => setFocused('')} />
+            <Field label="Confirm New Password" value={confirm} onChangeText={setConfirm} keyName="confirm" focused={focused}
+              onFocus={() => setFocused('current')}
+              onBlur={() => setFocused('')} />
           </View>
 
           <View style={{ paddingHorizontal: 24, marginTop: 32 }}>

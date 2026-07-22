@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View, Text, TouchableOpacity,
     ActivityIndicator, ScrollView,
@@ -57,6 +57,7 @@ type TimetableEntry = {
     id: string; time_slot: string; subject: string; room_name: string;
 };
 
+
 export default function HomeScreen() {
     const [student, setStudent] = useState<Student | null>(null);
     const [session, setSession] = useState<Session>({ active: false });
@@ -70,6 +71,7 @@ export default function HomeScreen() {
     const attendance = useAttendanceState();
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const bleCleanupRef = useRef<(() => void) | null>(null);
+
 
     useEffect(() => { fetchProfile(); }, []);
 
@@ -192,13 +194,13 @@ export default function HomeScreen() {
             Alert.alert("Bluetooth OFF", "Please turn on Bluetooth to mark attendance via ESP32.");
             return;
         }
-        attendance.markSuccess();
+        attendance.markLoading(); // ← replaces the premature markSuccess() — shows "scanning..." state instead
         try {
             const cleanup = await startBLEFlow(
                 session.session_id, API,
                 () => {
                     if (pollRef.current) clearInterval(pollRef.current);
-                    attendance.markSuccess();
+                    attendance.markSuccess(); // ← this is the ONLY legitimate success call now
                 },
                 (err: any) => {
                     if (err.message.includes('already marked')) attendance.markAlreadyMarked();
@@ -384,19 +386,19 @@ export default function HomeScreen() {
                             <View style={{ marginTop: 20 }}>
                                 {attendance.status === 'success' || attendance.status === 'already_marked' ? (
                                     <View style={{
-                                        backgroundColor: C.cardElevated,
+                                        backgroundColor: C.green,
                                         borderRadius: 12, padding: 16,
                                         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-                                        borderWidth: 1, borderColor: C.borderBright,
+                                        borderWidth: 1, borderColor: C.green,
                                     }}>
                                         <View style={{
                                             width: 20, height: 20, borderRadius: 10,
-                                            backgroundColor: C.text,
+                                            backgroundColor: C.green,
                                             alignItems: 'center', justifyContent: 'center',
                                         }}>
                                             <Text style={{ fontSize: 12, color: C.bg, fontWeight: '800' }}>✓</Text>
                                         </View>
-                                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.text }}>
+                                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.green }}>
                                             Attendance Marked
                                         </Text>
                                     </View>
@@ -408,7 +410,7 @@ export default function HomeScreen() {
                                         borderWidth: 1, borderColor: C.red,
                                     }}>
                                         <Text style={{ fontSize: 14, fontWeight: '700', color: C.red }}>
-                                            Retry — ESP32 Not Found
+                                            Retry — Not Detected
                                         </Text>
                                     </TouchableOpacity>
                                 ) : (
@@ -425,7 +427,7 @@ export default function HomeScreen() {
                                         {attendance.isLoading ? (
                                             <>
                                                 <ActivityIndicator color={C.bg} size="small" />
-                                                <Text style={{ fontSize: 15, fontWeight: '700', color: C.bg }}>Scanning BLE...</Text>
+                                                <Text style={{ fontSize: 15, fontWeight: '700', color: C.bg }}>Scanning...</Text>
                                             </>
                                         ) : (
                                             <Text style={{ fontSize: 15, fontWeight: '700', color: C.bg }}>

@@ -43,6 +43,8 @@ export default function SignIn() {
         body: JSON.stringify({ usn: usn.trim().toUpperCase(), password }),
       });
       const data = await res.json();
+      console.log(data.token);
+      
       if (!res.ok) throw new Error(data.error || 'Sign in failed');
       await saveToken(data.token, data.user_id);
       await saveToken(data.token, data.user_id ?? data.student_id);
